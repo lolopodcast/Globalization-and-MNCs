@@ -1,0 +1,1402 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>SMMC W13 主題測驗 — MNCs &amp; Globalization</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<style>
+  :root {
+    --bcg-green: #004030;
+    --bcg-green-light: #1d5e4a;
+    --bcg-gold: #D8C3A5;
+    --bcg-cream: #F5EFE6;
+    --bcg-ink: #1a1a1a;
+    --bcg-mute: #6b6b6b;
+    --bcg-line: #e5dfd3;
+    --ok: #2f7d4f;
+    --bad: #b3261e;
+  }
+  html, body { background: var(--bcg-cream); color: var(--bcg-ink); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang TC", "Microsoft JhengHei", sans-serif; }
+  .dark { --bcg-cream: #0e1a16; --bcg-ink: #ecead8; --bcg-line: #1f3a30; --bcg-mute: #9aa9a3; }
+  .dark body { background: #0e1a16; }
+  .bcg-card { background: #fff; border: 1px solid var(--bcg-line); border-radius: 14px; }
+  .dark .bcg-card { background: #142822; }
+  .bcg-btn { background: var(--bcg-green); color: #fff; border-radius: 10px; padding: 10px 18px; font-weight: 500; transition: all .15s; }
+  .bcg-btn:hover { background: var(--bcg-green-light); transform: translateY(-1px); }
+  .bcg-btn:disabled { opacity: .4; cursor: not-allowed; transform: none; }
+  .bcg-btn-ghost { background: transparent; color: var(--bcg-green); border: 1px solid var(--bcg-green); border-radius: 10px; padding: 10px 18px; font-weight: 500; }
+  .dark .bcg-btn-ghost { color: var(--bcg-gold); border-color: var(--bcg-gold); }
+  .opt { border: 1.5px solid var(--bcg-line); border-radius: 10px; padding: 14px 16px; cursor: pointer; transition: all .15s; }
+  .opt:hover { border-color: var(--bcg-green); background: rgba(0,64,48,0.04); }
+  .opt.selected { border-color: var(--bcg-green); background: rgba(0,64,48,0.08); }
+  .dark .opt.selected { background: rgba(216,195,165,0.12); border-color: var(--bcg-gold); }
+  .opt.correct { border-color: var(--ok); background: rgba(47,125,79,0.10); }
+  .opt.wrong { border-color: var(--bad); background: rgba(179,38,30,0.08); }
+  .topic-tile { border: 1px solid var(--bcg-line); border-radius: 12px; padding: 18px; cursor: pointer; transition: all .2s; background: #fff; }
+  .dark .topic-tile { background: #142822; }
+  .topic-tile:hover { border-color: var(--bcg-green); transform: translateY(-2px); box-shadow: 0 4px 14px rgba(0,64,48,0.08); }
+  .badge { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: 11px; font-weight: 500; }
+  .badge-green { background: var(--bcg-green); color: #fff; }
+  .badge-gold { background: var(--bcg-gold); color: #4a3a1f; }
+  .badge-grey { background: #eee; color: #555; }
+  .dark .badge-grey { background: #1f3a30; color: var(--bcg-mute); }
+  .progress-bar { height: 6px; background: var(--bcg-line); border-radius: 999px; overflow: hidden; }
+  .progress-fill { height: 100%; background: var(--bcg-green); transition: width .4s; }
+  .stat-num { font-size: 26px; font-weight: 600; color: var(--bcg-green); }
+  .dark .stat-num { color: var(--bcg-gold); }
+  table.kb { width: 100%; border-collapse: collapse; font-size: 13px; }
+  table.kb th, table.kb td { padding: 8px 10px; text-align: left; border-bottom: 1px solid var(--bcg-line); }
+  table.kb th { background: var(--bcg-green); color: #fff; font-weight: 500; }
+  .dark table.kb th { background: #1f3a30; color: var(--bcg-gold); }
+  .chip { display: inline-block; padding: 2px 8px; margin: 2px; background: rgba(0,64,48,0.08); border-radius: 6px; font-size: 12px; }
+  .dark .chip { background: rgba(216,195,165,0.12); }
+  input[type=text], input[type=email] {
+    background: transparent; border: 1px solid var(--bcg-line); border-radius: 8px; padding: 8px 12px; font-size: 14px; color: inherit; width: 100%;
+  }
+  input[type=text]:focus, input[type=email]:focus { outline: none; border-color: var(--bcg-green); }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+const { useState, useEffect, useMemo, useRef } = React;
+
+// ============================================================
+// 題庫 — 7 主題 × 40 題
+// ============================================================
+const TOPICS = [
+  {
+    id: "drivers",
+    titleZh: "全球化驅動力",
+    titleEn: "Drivers of Globalization",
+    desc: "What enables MNCs to operate across borders.",
+    color: "#004030",
+    questions: [
+      {
+        q: { zh: "下列何者「不是」課堂上提到的全球化主要驅動力（drivers/enablers）？",
+             en: "Which of the following is NOT a key driver/enabler of globalization mentioned in class?" },
+        opts: [
+          { zh: "運輸技術的進步", en: "Advances in transportation" },
+          { zh: "通訊技術的進步", en: "Advances in telecommunications" },
+          { zh: "國際貿易壁壘的降低", en: "Reduction in international trade barriers" },
+          { zh: "全球人口的快速增加", en: "Rapid increase in global population" },
+        ],
+        answer: 3,
+        explain: { zh: "課堂上的驅動力是『技術進步』與『貿易壁壘降低』；人口成長並非全球化的直接驅動因素。",
+                   en: "The lecture lists technology advances and trade-barrier reduction; population growth is not a direct driver." }
+      },
+      {
+        q: { zh: "Globalization（全球化）的核心特徵是？",
+             en: "What is the core feature of globalization?" },
+        opts: [
+          { zh: "國內企業之間的併購活動", en: "Domestic M&A activities" },
+          { zh: "跨境加值活動（cross-border value-added activities）", en: "Cross-border value-added activities" },
+          { zh: "政府對外貿的管制加強", en: "Stricter government controls on trade" },
+          { zh: "單一國家內部的產業升級", en: "Industry upgrading within a single country" },
+        ],
+        answer: 1,
+        explain: { zh: "Globalization 的核心是跨境加值活動，由 MNCs/MNEs 驅動。",
+                   en: "The essence of globalization is cross-border value-added activities driven by MNCs/MNEs." }
+      },
+      {
+        q: { zh: "下列何者最能說明『運輸與通訊技術進步』如何促進全球化？",
+             en: "Which best explains how advances in transport/telecom promote globalization?" },
+        opts: [
+          { zh: "提高了國內市場的進入門檻", en: "Raise entry barriers to domestic markets" },
+          { zh: "降低地理摩擦（geographic friction）", en: "Reduce geographic friction" },
+          { zh: "增加跨國併購的稅負", en: "Increase tax burden on cross-border M&A" },
+          { zh: "強化單一國家文化", en: "Strengthen single-nation culture" },
+        ],
+        answer: 1,
+        explain: { zh: "技術進步主要降低『地理摩擦』；貿易自由化則降低『制度摩擦』。",
+                   en: "Tech reduces geographic friction; trade liberalization reduces institutional friction." }
+      },
+      {
+        q: { zh: "MNC 與 MNE 的差異主要在於？",
+             en: "What is the main distinction between MNC and MNE?" },
+        opts: [
+          { zh: "MNC 只做出口，MNE 只做投資", en: "MNC only exports; MNE only invests" },
+          { zh: "兩者本質上同義，皆指從事跨境加值活動的企業", en: "They are essentially synonymous — firms engaged in cross-border value-added activities" },
+          { zh: "MNC 只在已開發國家，MNE 只在新興市場", en: "MNC only in developed; MNE only in emerging" },
+          { zh: "MNC 規模較小，MNE 規模較大", en: "MNC is smaller, MNE is larger" },
+        ],
+        answer: 1,
+        explain: { zh: "Multinational Corporation 與 Multinational Enterprise 在學術上多為同義詞。",
+                   en: "MNC and MNE are largely synonymous terms in academic usage." }
+      },
+      {
+        q: { zh: "Internationalization 與 Globalization 的差別最佳描述為？",
+             en: "Which best describes the difference between internationalization and globalization?" },
+        opts: [
+          { zh: "兩者完全相同", en: "Exactly the same" },
+          { zh: "Internationalization 是個別企業的跨國延伸；Globalization 是總體層次的市場整合",
+            en: "Internationalization = firm-level cross-border expansion; globalization = macro-level integration" },
+          { zh: "Internationalization 只發生在製造業", en: "Internationalization only in manufacturing" },
+          { zh: "Globalization 只是出口活動的總和", en: "Globalization is just the sum of all exports" },
+        ],
+        answer: 1,
+        explain: { zh: "Internationalization 偏個體層次（企業）；Globalization 偏總體層次（市場與生產整合）。",
+                   en: "Internationalization is firm-level; globalization is macro/system-level." }
+      },
+    ]
+  },
+  {
+    id: "motivation",
+    titleZh: "市場進入動機",
+    titleEn: "Market Entry Motivation",
+    desc: "Why firms cross borders — demand-side, supply-side, risk-sharing.",
+    color: "#a83c1d",
+    questions: [
+      {
+        q: { zh: "Market-seeking 屬於哪一類動機？",
+             en: "Market-seeking belongs to which motivation category?" },
+        opts: [
+          { zh: "供給面（Supply-side）", en: "Supply-side" },
+          { zh: "需求面（Demand-side）", en: "Demand-side" },
+          { zh: "風險分散（Risk-sharing）", en: "Risk-sharing" },
+          { zh: "政治考量（Political）", en: "Political" },
+        ],
+        answer: 1,
+        explain: { zh: "Market-seeking = 擴大銷售市場，屬於需求面動機。",
+                   en: "Market-seeking expands sales markets — a demand-side motive." }
+      },
+      {
+        q: { zh: "Resource-seeking、Tech-seeking、Competence-leveraging 同屬哪一類？",
+             en: "Resource-, Tech-, and Competence-leveraging all belong to which category?" },
+        opts: [
+          { zh: "需求面（Demand-side）", en: "Demand-side" },
+          { zh: "供給面（Supply-side）", en: "Supply-side" },
+          { zh: "風險分散（Risk-sharing）", en: "Risk-sharing" },
+          { zh: "文化適應（Cultural）", en: "Cultural adaptation" },
+        ],
+        answer: 1,
+        explain: { zh: "這三者都是取得或運用『資源/技術/能力』的動機，屬供給面。",
+                   en: "All three are about acquiring or leveraging resources/tech/capability — supply-side." }
+      },
+      {
+        q: { zh: "台積電到美國亞利桑那設廠，受到客戶（如 Apple、AMD）地理鄰近的吸引，主要屬於？",
+             en: "TSMC building fabs in Arizona, attracted by proximity to customers like Apple/AMD, is mainly which motive?" },
+        opts: [
+          { zh: "Resource-seeking", en: "Resource-seeking" },
+          { zh: "Market-seeking", en: "Market-seeking" },
+          { zh: "Risk-sharing only", en: "Pure risk-sharing" },
+          { zh: "Tech-seeking", en: "Tech-seeking" },
+        ],
+        answer: 1,
+        explain: { zh: "靠近主要客戶以服務市場需求，屬 Market-seeking；同時也有 Risk-sharing 成分但主動機是市場。",
+                   en: "Locating near major customers to serve demand = Market-seeking (with some risk-sharing component)." }
+      },
+      {
+        q: { zh: "一家瑞士藥廠到波士頓設研發中心，目的是接觸 MIT/Harvard 生醫人才。最貼切的動機分類？",
+             en: "A Swiss pharma firm opens an R&D center in Boston to access MIT/Harvard biomedical talent. Best classification?" },
+        opts: [
+          { zh: "Market-seeking", en: "Market-seeking" },
+          { zh: "Tech-seeking", en: "Tech-seeking" },
+          { zh: "Risk-sharing", en: "Risk-sharing" },
+          { zh: "Demand expanding", en: "Demand expanding" },
+        ],
+        answer: 1,
+        explain: { zh: "為取得知識/技術/人才而設立海外據點，屬 Tech-seeking。",
+                   en: "Establishing overseas operations to access knowledge/tech/talent = Tech-seeking." }
+      },
+      {
+        q: { zh: "下列哪一項最能說明 Risk-sharing 動機？",
+             en: "Which best illustrates the risk-sharing motive?" },
+        opts: [
+          { zh: "為了佔據新興市場的高成長", en: "To capture growth in an emerging market" },
+          { zh: "為了避免單一國家的政治、匯率與經濟風險過度集中", en: "To avoid over-concentration of political, FX, and economic risk in one country" },
+          { zh: "為了取得便宜的原物料", en: "To obtain cheaper raw materials" },
+          { zh: "為了學習新技術", en: "To learn new technologies" },
+        ],
+        answer: 1,
+        explain: { zh: "Risk-sharing = 地理分散以降低單一國家風險。",
+                   en: "Risk-sharing = geographic diversification to reduce single-country exposure." }
+      },
+      {
+        q: { zh: "在 WTP-MC-MR 圖中，廠商考慮跨入新市場時，下列何者最關鍵？",
+             en: "In the WTP-MC-MR framework, when entering a new market, which is most critical?" },
+        opts: [
+          { zh: "新市場的 WTP 與 MC 是否能維持正向加值空間", en: "Whether WTP minus MC still leaves positive value-added in the new market" },
+          { zh: "母國的政治體制", en: "Home country's political regime" },
+          { zh: "員工人數總和", en: "Total headcount" },
+          { zh: "辦公室的地理位置美觀度", en: "Aesthetics of office location" },
+        ],
+        answer: 0,
+        explain: { zh: "進入決策的經濟學基礎是 WTP > MC，即仍有獲利/加值空間。",
+                   en: "Economic basis: WTP > MC, i.e., positive value-added remains." }
+      },
+    ]
+  },
+  {
+    id: "entry_mode",
+    titleZh: "進入模式（Entry Modes）",
+    titleEn: "Entry Modes",
+    desc: "From exporting to wholly-owned subsidiary.",
+    color: "#b3651d",
+    questions: [
+      {
+        q: { zh: "下列哪一項屬於 Non-equity 進入模式？",
+             en: "Which of the following is a Non-equity entry mode?" },
+        opts: [
+          { zh: "Greenfield 投資", en: "Greenfield investment" },
+          { zh: "Joint Venture（JV）", en: "Joint Venture (JV)" },
+          { zh: "Licensing / Franchising", en: "Licensing / Franchising" },
+          { zh: "Wholly-Owned Subsidiary（WOS）", en: "Wholly-Owned Subsidiary (WOS)" },
+        ],
+        answer: 2,
+        explain: { zh: "Licensing 與 Franchising 不涉及股權，屬 Non-equity；JV/Greenfield/WOS 皆屬 Equity-based。",
+                   en: "Licensing/Franchising involves no equity; JV/Greenfield/WOS are all equity-based." }
+      },
+      {
+        q: { zh: "WOS（Wholly-Owned Subsidiary）通常透過哪兩種方式建立？",
+             en: "WOS is typically established via which two routes?" },
+        opts: [
+          { zh: "Exporting 或 Licensing", en: "Exporting or Licensing" },
+          { zh: "Greenfield 或 M&A", en: "Greenfield or M&A" },
+          { zh: "Franchising 或 JV", en: "Franchising or JV" },
+          { zh: "Strategic Alliance 或 Joint Venture", en: "Strategic Alliance or Joint Venture" },
+        ],
+        answer: 1,
+        explain: { zh: "WOS 可由綠地投資（從零建廠）或併購（收購當地公司）取得。",
+                   en: "WOS can be built via Greenfield (from scratch) or M&A (acquiring a local firm)." }
+      },
+      {
+        q: { zh: "從 Int'l Trade 到 FDI 的光譜上，控制度與承諾度的排序由低到高最接近？",
+             en: "On the Int'l Trade → FDI spectrum, which ordering best reflects increasing control/commitment?" },
+        opts: [
+          { zh: "WOS → JV → Licensing → Exporting", en: "WOS → JV → Licensing → Exporting" },
+          { zh: "Exporting → Licensing → JV → WOS", en: "Exporting → Licensing → JV → WOS" },
+          { zh: "JV → Exporting → WOS → Licensing", en: "JV → Exporting → WOS → Licensing" },
+          { zh: "Licensing → WOS → Exporting → JV", en: "Licensing → WOS → Exporting → JV" },
+        ],
+        answer: 1,
+        explain: { zh: "標準教科書順序：Exporting → Licensing/Franchising → SA/JV → Greenfield/M&A（WOS）。",
+                   en: "Standard textbook ordering: Exporting → Licensing → SA/JV → Greenfield/M&A (WOS)." }
+      },
+      {
+        q: { zh: "Joint Venture（JV）的核心特徵是？",
+             en: "What is the core feature of a Joint Venture (JV)?" },
+        opts: [
+          { zh: "完全不涉及股權", en: "No equity involvement at all" },
+          { zh: "兩家以上廠商共同出資成立的新法人", en: "Two or more firms jointly invest in a new legal entity" },
+          { zh: "只是出口商與進口商間的合約", en: "Just a contract between exporter and importer" },
+          { zh: "母公司 100% 持股的海外子公司", en: "An overseas subsidiary 100% owned by the parent" },
+        ],
+        answer: 1,
+        explain: { zh: "JV 必涉股權，由兩家以上廠商共同出資設立新法人共擔風險。",
+                   en: "JV involves equity — two or more firms co-invest in a new entity to share risk." }
+      },
+      {
+        q: { zh: "下列何者最不適合形容 Greenfield 投資？",
+             en: "Which least describes a Greenfield investment?" },
+        opts: [
+          { zh: "從零建立新廠房或設施", en: "Building new facilities from scratch" },
+          { zh: "可完整掌控廠房設計與文化", en: "Full control over design and culture" },
+          { zh: "進入速度通常較 M&A 快", en: "Usually faster market entry than M&A" },
+          { zh: "需要較長的建置時間", en: "Requires longer setup time" },
+        ],
+        answer: 2,
+        explain: { zh: "Greenfield 須從零建置，速度通常比 M&A 慢；M&A 可立即取得既有資產與通路。",
+                   en: "Greenfield is built from scratch and is usually slower than M&A, which acquires existing assets." }
+      },
+      {
+        q: { zh: "Licensing 與 Franchising 的主要差異是？",
+             en: "What is the main difference between Licensing and Franchising?" },
+        opts: [
+          { zh: "Licensing 通常授權技術/專利，Franchising 通常授權整套營運模式（含品牌、流程、訓練）",
+            en: "Licensing typically licenses tech/patents; Franchising licenses a full business system (brand, process, training)" },
+          { zh: "兩者完全相同", en: "They are identical" },
+          { zh: "Licensing 一定有股權，Franchising 沒有", en: "Licensing always has equity; Franchising doesn't" },
+          { zh: "Franchising 比 Licensing 控制度低", en: "Franchising has less control than Licensing" },
+        ],
+        answer: 0,
+        explain: { zh: "Franchising 通常涵蓋品牌＋作業手冊＋訓練（如麥當勞）；Licensing 範圍較窄。",
+                   en: "Franchising bundles brand + operating manual + training (e.g., McDonald's); Licensing is narrower." }
+      },
+      {
+        q: { zh: "Strategic Alliance（SA）相較於 JV 的關鍵差異是？",
+             en: "Key difference between a Strategic Alliance (SA) and a JV?" },
+        opts: [
+          { zh: "SA 必定設立新法人，JV 不必", en: "SA always creates a new entity; JV doesn't" },
+          { zh: "SA 不一定設立新法人，可為契約型合作；JV 一定設立新法人共擔股權",
+            en: "SA may not create a new entity (can be contractual); JV always creates a jointly-owned entity" },
+          { zh: "SA 比 WOS 控制度高", en: "SA has higher control than WOS" },
+          { zh: "SA 只能在已開發國家簽訂", en: "SA can only be signed in developed countries" },
+        ],
+        answer: 1,
+        explain: { zh: "SA 可為契約合作（無新法人）或股權合作；JV 則必為共同出資的新法人。",
+                   en: "SA can be contractual (no new entity) or equity-based; JV must be a jointly-owned new entity." }
+      },
+    ]
+  },
+  {
+    id: "cage",
+    titleZh: "CAGE、Stage Model 與 Born Global",
+    titleEn: "CAGE, Stage Model, Born Global, Foreignness",
+    desc: "Distance, sequencing, and the liability of being foreign.",
+    color: "#9c6b1a",
+    questions: [
+      {
+        q: { zh: "CAGE 架構中的 C、A、G、E 分別代表？",
+             en: "What do C, A, G, E stand for in the CAGE framework?" },
+        opts: [
+          { zh: "Cost, Asset, Growth, Equity", en: "Cost, Asset, Growth, Equity" },
+          { zh: "Cultural, Administrative, Geographic, Economic", en: "Cultural, Administrative, Geographic, Economic" },
+          { zh: "Customer, Activity, Government, Environment", en: "Customer, Activity, Government, Environment" },
+          { zh: "Capital, Allocation, Globalization, Efficiency", en: "Capital, Allocation, Globalization, Efficiency" },
+        ],
+        answer: 1,
+        explain: { zh: "CAGE = Cultural / Administrative / Geographic / Economic distance（Pankaj Ghemawat）。",
+                   en: "CAGE = Cultural / Administrative / Geographic / Economic distance (Ghemawat)." }
+      },
+      {
+        q: { zh: "下列哪個情境最能體現『Cultural Distance（文化距離）』的影響？",
+             en: "Which scenario best reflects Cultural Distance?" },
+        opts: [
+          { zh: "韓國品牌在日本必須重新設計包裝與廣告語調", en: "A Korean brand must redesign packaging and ad tone for Japan" },
+          { zh: "兩國貨幣匯率劇烈波動", en: "Sharp FX volatility between two countries" },
+          { zh: "兩國位於不同大陸", en: "The two countries are on different continents" },
+          { zh: "兩國 GDP 差距很大", en: "Big GDP gap between the two countries" },
+        ],
+        answer: 0,
+        explain: { zh: "包裝/語調的在地化調整反映文化差異；匯率屬經濟距離，地理屬地理距離。",
+                   en: "Localizing packaging/tone reflects culture; FX is economic; continents are geographic." }
+      },
+      {
+        q: { zh: "Stage Model（階段模型）的核心假設是？",
+             en: "Core assumption of the Stage Model?" },
+        opts: [
+          { zh: "企業必須一次性全球佈局，不可循序漸進", en: "Firms must globalize all at once, no sequencing" },
+          { zh: "企業循序漸進累積經驗，依序從低承諾進入模式走向高承諾模式",
+            en: "Firms sequentially accumulate experience, moving from low- to high-commitment modes" },
+          { zh: "企業應該完全跳過出口階段", en: "Firms should skip exporting entirely" },
+          { zh: "進入模式與經驗累積無關", en: "Entry mode is unrelated to accumulated experience" },
+        ],
+        answer: 1,
+        explain: { zh: "Stage Model（Uppsala 模型）強調漸進式國際化，隨經驗累積提高承諾。",
+                   en: "Stage/Uppsala model: incremental internationalization with growing commitment." }
+      },
+      {
+        q: { zh: "Born Global 公司的最顯著特徵是？",
+             en: "Most distinctive feature of Born Global firms?" },
+        opts: [
+          { zh: "通常規模大且歷史悠久", en: "Usually large and long-established" },
+          { zh: "成立初期即進行國際化，跳過 Stage Model 的循序漸進",
+            en: "Internationalize from inception, bypassing the gradual Stage Model" },
+          { zh: "只在母國市場銷售", en: "Sell only in home market" },
+          { zh: "只做出口，不做 FDI", en: "Only export, never FDI" },
+        ],
+        answer: 1,
+        explain: { zh: "Born Global 從創立初期即跨國經營，常見於新創、SaaS、跨境電商。",
+                   en: "Born Global firms internationalize from inception (common among startups, SaaS, cross-border e-commerce)." }
+      },
+      {
+        q: { zh: "Liability of Foreignness（外來者劣勢）最佳的描述是？",
+             en: "Best description of Liability of Foreignness?" },
+        opts: [
+          { zh: "本國企業在本國的稅務優勢", en: "Tax advantage of domestic firms at home" },
+          { zh: "跨國經營必須額外承擔的成本：語言、制度、品牌認知、政治風險",
+            en: "Extra costs of operating abroad: language, institutions, brand recognition, political risk" },
+          { zh: "外商投資的關稅減免", en: "Tariff reductions for foreign investors" },
+          { zh: "WTO 給予新會員的緩衝期", en: "WTO grace period for new members" },
+        ],
+        answer: 1,
+        explain: { zh: "Liability of Foreignness 是跨國經營者相對於本地廠商的額外劣勢/成本。",
+                   en: "It refers to extra disadvantages/costs foreign firms face vs locals." }
+      },
+      {
+        q: { zh: "下列哪一種廠商最可能採用 Born Global 路徑？",
+             en: "Which firm is most likely to follow a Born Global path?" },
+        opts: [
+          { zh: "傳統重工業大廠", en: "Traditional heavy-industry conglomerate" },
+          { zh: "本地零售雜貨店", en: "A local grocery store" },
+          { zh: "雲端 SaaS 新創公司", en: "A cloud SaaS startup" },
+          { zh: "國營公用事業", en: "State-owned utility" },
+        ],
+        answer: 2,
+        explain: { zh: "數位/SaaS 新創的邊際擴展成本低、市場無國界，最易 Born Global。",
+                   en: "Digital/SaaS startups have near-zero marginal cost to expand and borderless markets — natural Born Global." }
+      },
+    ]
+  },
+  {
+    id: "mne_types",
+    titleZh: "MNE 類型與 I-R 架構",
+    titleEn: "MNE Types & I-R Framework",
+    desc: "The four types of MNE and the three axes of corporate scope.",
+    color: "#3b6d11",
+    questions: [
+      {
+        q: { zh: "I-R 架構（Integration-Responsiveness Framework）的兩個軸分別是？",
+             en: "What are the two axes of the I-R framework?" },
+        opts: [
+          { zh: "Global Integration 與 Local Responsiveness", en: "Global Integration and Local Responsiveness" },
+          { zh: "Cost Leadership 與 Differentiation", en: "Cost Leadership and Differentiation" },
+          { zh: "Threat 與 Opportunity", en: "Threat and Opportunity" },
+          { zh: "Centralization 與 Innovation", en: "Centralization and Innovation" },
+        ],
+        answer: 0,
+        explain: { zh: "I-R 架構 = Global Integration（供給面整合）× Local Responsiveness（需求面在地回應）。",
+                   en: "I-R = Global Integration (supply-side efficiency) × Local Responsiveness (demand-side adaptation)." }
+      },
+      {
+        q: { zh: "『高度全球整合 + 低度在地回應』的 MNE 屬於哪一類？",
+             en: "An MNE with high global integration but low local responsiveness is which type?" },
+        opts: [
+          { zh: "Multinational", en: "Multinational" },
+          { zh: "International", en: "International" },
+          { zh: "Global", en: "Global" },
+          { zh: "Transnational", en: "Transnational" },
+        ],
+        answer: 2,
+        explain: { zh: "Global 型 = 全球標準化、效率優先（如早期的 Intel）。",
+                   en: "Global type = standardized worldwide, efficiency-driven (e.g., early Intel)." }
+      },
+      {
+        q: { zh: "『低度全球整合 + 高度在地回應』的 MNE 屬於哪一類？",
+             en: "Low global integration + high local responsiveness = which type?" },
+        opts: [
+          { zh: "Multinational", en: "Multinational" },
+          { zh: "Global", en: "Global" },
+          { zh: "International", en: "International" },
+          { zh: "Transnational", en: "Transnational" },
+        ],
+        answer: 0,
+        explain: { zh: "Multinational 型 = 各國高度自主、分權，重在地化（如早期的聯合利華）。",
+                   en: "Multinational type = decentralized country units, localized (e.g., early Unilever)." }
+      },
+      {
+        q: { zh: "Transnational 策略最難達成的原因是？",
+             en: "Why is the Transnational strategy hardest to achieve?" },
+        opts: [
+          { zh: "完全不可能存在", en: "It cannot exist at all" },
+          { zh: "必須同時兼顧全球效率整合與在地回應的雙重要求",
+            en: "It must simultaneously achieve global efficiency AND local responsiveness — a dual demand" },
+          { zh: "只能在母國市場操作", en: "Can only be done in home market" },
+          { zh: "永遠虧損", en: "Always unprofitable" },
+        ],
+        answer: 1,
+        explain: { zh: "Transnational 須同時做到 Global Integration 與 Local Responsiveness，組織複雜度極高。",
+                   en: "Transnational requires both axes simultaneously — extreme organizational complexity." }
+      },
+      {
+        q: { zh: "在企業成長的三軸（V.I. / P.D. / G.E.）中，Internationalization 對應的是？",
+             en: "Among the three growth axes (V.I. / P.D. / G.E.), internationalization corresponds to which?" },
+        opts: [
+          { zh: "V.I.（Vertical Integration 垂直整合）", en: "V.I. (Vertical Integration)" },
+          { zh: "P.D.（Product Diversification 產品多角化）", en: "P.D. (Product Diversification)" },
+          { zh: "G.E.（Geographic Expansion 地理擴張）", en: "G.E. (Geographic Expansion)" },
+          { zh: "三者皆是", en: "All of the above" },
+        ],
+        answer: 2,
+        explain: { zh: "G.E. 軸即地理擴張，等同於 Internationalization / Globalization。",
+                   en: "G.E. is the geographic expansion axis — equivalent to internationalization/globalization." }
+      },
+      {
+        q: { zh: "依 Chandler 的經典命題，下列何者最為貼切？",
+             en: "Per Chandler's classic proposition, which is most accurate?" },
+        opts: [
+          { zh: "Strategy follows structure", en: "Strategy follows structure" },
+          { zh: "Structure follows strategy", en: "Structure follows strategy" },
+          { zh: "Structure and strategy are independent", en: "Structure and strategy are independent" },
+          { zh: "Strategy is only about cost", en: "Strategy is only about cost" },
+        ],
+        answer: 1,
+        explain: { zh: "Chandler（1962）：『Structure follows strategy』— 組織結構應跟隨策略。",
+                   en: "Chandler (1962): structure follows strategy." }
+      },
+    ]
+  },
+  {
+    id: "diamond",
+    titleZh: "鑽石模型（Diamond Model）",
+    titleEn: "Porter's Diamond Model",
+    desc: "What gives a nation competitive advantage.",
+    color: "#185fa5",
+    questions: [
+      {
+        q: { zh: "Porter 鑽石模型的『四大內生要素』不包含下列何者？",
+             en: "Which is NOT one of Porter's four endogenous diamond factors?" },
+        opts: [
+          { zh: "Factor Conditions（生產要素）", en: "Factor Conditions" },
+          { zh: "Demand Conditions（需求條件）", en: "Demand Conditions" },
+          { zh: "Related & Supporting Industries（相關支援產業）", en: "Related & Supporting Industries" },
+          { zh: "Currency Stability（貨幣穩定）", en: "Currency Stability" },
+        ],
+        answer: 3,
+        explain: { zh: "四大要素：Factor / Demand / Related & Supporting / Firm Strategy, Structure & Rivalry。",
+                   en: "Four factors: Factor / Demand / Related & Supporting / Firm Strategy, Structure & Rivalry." }
+      },
+      {
+        q: { zh: "在鑽石模型中，『Government』與『Chance』的角色是？",
+             en: "What is the role of Government and Chance in the Diamond Model?" },
+        opts: [
+          { zh: "四大內生要素之一", en: "Among the four endogenous factors" },
+          { zh: "外生影響力（exogenous forces），可影響但不直接構成競爭優勢",
+            en: "Exogenous forces — influence but don't directly form competitive advantage" },
+          { zh: "與鑽石模型無關", en: "Unrelated to the Diamond Model" },
+          { zh: "只是裝飾性概念", en: "Decorative only" },
+        ],
+        answer: 1,
+        explain: { zh: "Government 與 Chance 是外生變數，會調節四大內生要素的作用。",
+                   en: "Government and Chance are exogenous variables that moderate the four endogenous factors." }
+      },
+      {
+        q: { zh: "『Demand Conditions』在鑽石模型中最重要的特徵是？",
+             en: "Most important feature of Demand Conditions in the Diamond Model?" },
+        opts: [
+          { zh: "市場規模越大越好，挑剔度不重要", en: "Bigger market is better; sophistication irrelevant" },
+          { zh: "國內顧客的挑剔度與前瞻性能驅動廠商創新", en: "Sophisticated and demanding home customers drive innovation" },
+          { zh: "只看人口數量", en: "Only population matters" },
+          { zh: "與創新無關", en: "Unrelated to innovation" },
+        ],
+        answer: 1,
+        explain: { zh: "Porter 強調『挑剔的本國顧客』比『大量顧客』更能驅動產業競爭力。",
+                   en: "Porter emphasizes demanding/sophisticated local buyers over sheer market size." }
+      },
+      {
+        q: { zh: "下列哪一項最能體現『Related &amp; Supporting Industries』？",
+             en: "Which best illustrates Related &amp; Supporting Industries?" },
+        opts: [
+          { zh: "新竹科學園區的 IC 設計、晶圓代工、封測、設備、化學品產業群聚",
+            en: "Hsinchu Science Park cluster: IC design, foundry, packaging/testing, equipment, chemicals" },
+          { zh: "單一公司的內部部門", en: "Internal departments of a single firm" },
+          { zh: "政府的稅務政策", en: "Government tax policies" },
+          { zh: "外國消費者的偏好", en: "Foreign consumer preferences" },
+        ],
+        answer: 0,
+        explain: { zh: "Related & Supporting Industries 強調產業群聚（cluster），新竹園區是經典案例。",
+                   en: "Related & Supporting Industries = industry clusters; Hsinchu is a textbook example." }
+      },
+      {
+        q: { zh: "『Firm Strategy, Structure &amp; Rivalry』在鑽石模型中強調什麼？",
+             en: "What does Firm Strategy, Structure &amp; Rivalry emphasize?" },
+        opts: [
+          { zh: "國內競爭越激烈，廠商越懶散", en: "More domestic rivalry makes firms lazier" },
+          { zh: "國內強勁的競爭壓力與適合的管理結構可孕育國際競爭力",
+            en: "Strong domestic rivalry and fitting management structures cultivate international competitiveness" },
+          { zh: "完全不重要", en: "Not important at all" },
+          { zh: "與管理結構無關", en: "Unrelated to management structure" },
+        ],
+        answer: 1,
+        explain: { zh: "強勁的本國對手會逼迫廠商不斷升級，是國際競爭力的搖籃。",
+                   en: "Strong local rivals force constant upgrading — a cradle for international competitiveness." }
+      },
+    ]
+  },
+  {
+    id: "taiwan",
+    titleZh: "案例：台灣半導體與 ICT",
+    titleEn: "Case: Taiwan Semiconductor &amp; ICT",
+    desc: "Applying the Diamond Model to Taiwan's flagship industries.",
+    color: "#085041",
+    questions: [
+      {
+        q: { zh: "台灣半導體產業在鑽石模型『Factor Conditions』上最關鍵的優勢是？",
+             en: "Taiwan semiconductor's most critical Factor Conditions advantage is?" },
+        opts: [
+          { zh: "豐沛天然資源", en: "Abundant natural resources" },
+          { zh: "高素質的工程師人才與晶圓代工製程 know-how",
+            en: "High-quality engineering talent and foundry process know-how" },
+          { zh: "廣大的內需消費市場", en: "Huge domestic consumer market" },
+          { zh: "便宜的土地", en: "Cheap land" },
+        ],
+        answer: 1,
+        explain: { zh: "台灣的競爭優勢不在天然資源，而在『創造性』的高階生產要素：工程人才＋製程 know-how。",
+                   en: "Taiwan's edge is in 'created' advanced factors: engineering talent + process know-how — not natural resources." }
+      },
+      {
+        q: { zh: "下列哪一項最能體現新竹/台南科學園區的『產業群聚效應』？",
+             en: "Which best reflects the cluster effect of Hsinchu/Tainan Science Parks?" },
+        opts: [
+          { zh: "IC 設計、晶圓代工、封測、設備、化學品供應商高度集中於同一區域",
+            en: "IC design, foundry, packaging/testing, equipment, chemical suppliers densely co-located" },
+          { zh: "單一公司獨佔市場", en: "Single firm monopolizing the market" },
+          { zh: "政府禁止外商進入", en: "Government bans foreign firms" },
+          { zh: "全部依賴進口原物料", en: "Fully reliant on imported raw materials" },
+        ],
+        answer: 0,
+        explain: { zh: "產業群聚 = 相關 & 支援產業高度集中，產生知識外溢與供應鏈效率。",
+                   en: "Cluster = dense co-location of related/supporting industries → knowledge spillover + supply-chain efficiency." }
+      },
+      {
+        q: { zh: "從鑽石模型看，『台積電 vs 聯電 vs 世界先進』的本國競爭關係屬於哪一構面？",
+             en: "TSMC vs UMC vs VIS domestic rivalry maps to which Diamond Model dimension?" },
+        opts: [
+          { zh: "Factor Conditions", en: "Factor Conditions" },
+          { zh: "Demand Conditions", en: "Demand Conditions" },
+          { zh: "Related &amp; Supporting Industries", en: "Related &amp; Supporting Industries" },
+          { zh: "Firm Strategy, Structure &amp; Rivalry", en: "Firm Strategy, Structure &amp; Rivalry" },
+        ],
+        answer: 3,
+        explain: { zh: "國內競爭對手間的競爭強度屬於 Firm Strategy, Structure & Rivalry 構面。",
+                   en: "Domestic rivalry intensity = Firm Strategy, Structure & Rivalry dimension." }
+      },
+      {
+        q: { zh: "ICT（Information &amp; Communications Technologies）產業與半導體產業在台灣的關係最佳描述為？",
+             en: "Best description of the relationship between Taiwan's ICT industry and semiconductor industry?" },
+        opts: [
+          { zh: "兩者完全無關", en: "Completely unrelated" },
+          { zh: "形成上下游互補的產業鏈，互為彼此的 Related &amp; Supporting Industries",
+            en: "Form complementary upstream-downstream value chain — mutually Related &amp; Supporting Industries" },
+          { zh: "ICT 完全取代半導體", en: "ICT fully replaces semiconductor" },
+          { zh: "兩者互為競爭關係", en: "They directly compete with each other" },
+        ],
+        answer: 1,
+        explain: { zh: "半導體（IC）與 ICT（系統/品牌）形成互補的群聚，互為支援產業。",
+                   en: "Semiconductor (ICs) and ICT (systems/brands) form a complementary cluster, each supporting the other." }
+      },
+      {
+        q: { zh: "台積電赴美國亞利桑那設廠（Greenfield），從進入模式與動機角度，最完整的解讀是？",
+             en: "TSMC's Arizona Greenfield fab — most complete reading of entry mode + motivation?" },
+        opts: [
+          { zh: "Non-equity 模式；單純為了便宜土地", en: "Non-equity mode; purely for cheap land" },
+          { zh: "Equity-based Greenfield（WOS）；混合 Market-seeking（靠近客戶）與 Risk-sharing（地緣政治分散）",
+            en: "Equity-based Greenfield (WOS); a mix of Market-seeking (proximity to customers) and Risk-sharing (geopolitical diversification)" },
+          { zh: "Licensing 模式；技術授權給美國廠商", en: "Licensing mode; tech licensed to a US firm" },
+          { zh: "Joint Venture 模式；與美國政府合資", en: "Joint Venture with the US government" },
+        ],
+        answer: 1,
+        explain: { zh: "亞利桑那廠是台積電 100% 持股的綠地投資（WOS），背後動機是市場服務＋地緣風險分散。",
+                   en: "Arizona is a 100%-owned Greenfield (WOS), driven by market access + geopolitical risk-sharing." }
+      },
+    ]
+  },
+];
+
+// 驗證總題數
+const TOTAL_Q = TOPICS.reduce((s, t) => s + t.questions.length, 0); // 應為 40
+
+// ============================================================
+// localStorage 工具
+// ============================================================
+const LS_KEY = "smmc_w13_quiz_state_v1";
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    if (!raw) return defaultState();
+    return { ...defaultState(), ...JSON.parse(raw) };
+  } catch (e) { return defaultState(); }
+}
+function defaultState() {
+  return {
+    profile: { name: "", studentId: "", email: "" },
+    lang: "zh", // zh | en | both
+    theme: "light",
+    // 每題的歷程：{ topicId, qIdx, attempts: [{correct, timeSec, ts, chosen}] }
+    attempts: {},   // key = `${topicId}:${qIdx}` → array of attempts
+    sessions: [],   // 每次主題測驗的整體結果摘要
+  };
+}
+function saveState(s) {
+  try { localStorage.setItem(LS_KEY, JSON.stringify(s)); } catch (e) {}
+}
+
+// ============================================================
+// 主程式
+// ============================================================
+function App() {
+  const [state, setState] = useState(loadState());
+  const [view, setView] = useState("home"); // home | profile | quiz | result | dashboard
+  const [activeTopic, setActiveTopic] = useState(null);
+  const [quizSession, setQuizSession] = useState(null); // 當前測驗會話
+
+  useEffect(() => { saveState(state); }, [state]);
+  useEffect(() => {
+    document.documentElement.classList.toggle("dark", state.theme === "dark");
+  }, [state.theme]);
+
+  const lang = state.lang;
+  const t = (zh, en) => lang === "en" ? en : lang === "both" ? `${zh} / ${en}` : zh;
+
+  // 啟動主題測驗
+  function startQuiz(topic) {
+    setActiveTopic(topic);
+    setQuizSession({
+      topicId: topic.id,
+      startTs: Date.now(),
+      qStartTs: Date.now(),
+      curIdx: 0,
+      answers: new Array(topic.questions.length).fill(null), // {chosen, timeSec}
+    });
+    setView("quiz");
+  }
+
+  function recordAnswer(idx, chosen, timeSec) {
+    const topic = activeTopic;
+    const q = topic.questions[idx];
+    const correct = chosen === q.answer;
+    const key = `${topic.id}:${idx}`;
+    setState(s => {
+      const arr = s.attempts[key] ? [...s.attempts[key]] : [];
+      arr.push({ correct, timeSec, ts: Date.now(), chosen });
+      return { ...s, attempts: { ...s.attempts, [key]: arr } };
+    });
+  }
+
+  function submitQuiz() {
+    const topic = activeTopic;
+    const answers = quizSession.answers;
+    let correctCount = 0;
+    answers.forEach((a, i) => {
+      if (a && a.chosen === topic.questions[i].answer) correctCount++;
+    });
+    const totalTime = Math.round((Date.now() - quizSession.startTs) / 1000);
+    const summary = {
+      topicId: topic.id,
+      ts: Date.now(),
+      correctCount,
+      total: topic.questions.length,
+      totalTimeSec: totalTime,
+      answersSnap: answers,
+    };
+    setState(s => ({ ...s, sessions: [...s.sessions, summary] }));
+    setQuizSession({ ...quizSession, finished: true, summary });
+    setView("result");
+  }
+
+  function retryQuiz() {
+    startQuiz(activeTopic);
+  }
+
+  function nextTopic() {
+    const idx = TOPICS.findIndex(t => t.id === activeTopic.id);
+    if (idx < TOPICS.length - 1) {
+      startQuiz(TOPICS[idx + 1]);
+    } else {
+      setView("dashboard");
+    }
+  }
+
+  // ====== 各分頁 ======
+  return (
+    <div className="min-h-screen">
+      <Header state={state} setState={setState} setView={setView} lang={lang} t={t} />
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 pb-20">
+        {view === "home" && <Home state={state} t={t} onStart={startQuiz} setView={setView} />}
+        {view === "profile" && <Profile state={state} setState={setState} setView={setView} t={t} />}
+        {view === "quiz" && quizSession && activeTopic && (
+          <Quiz
+            topic={activeTopic}
+            session={quizSession}
+            setSession={setQuizSession}
+            recordAnswer={recordAnswer}
+            submitQuiz={submitQuiz}
+            t={t} lang={lang}
+            cancel={() => setView("home")}
+          />
+        )}
+        {view === "result" && quizSession?.finished && activeTopic && (
+          <Result
+            topic={activeTopic}
+            summary={quizSession.summary}
+            session={quizSession}
+            onRetry={retryQuiz}
+            onNext={nextTopic}
+            onHome={() => setView("home")}
+            onDashboard={() => setView("dashboard")}
+            t={t} lang={lang}
+          />
+        )}
+        {view === "dashboard" && <Dashboard state={state} setState={setState} t={t} setView={setView} />}
+      </div>
+      <Footer t={t} />
+    </div>
+  );
+}
+
+// ============================================================
+// Header
+// ============================================================
+function Header({ state, setState, setView, lang, t }) {
+  return (
+    <header className="border-b" style={{ borderColor: "var(--bcg-line)", background: "rgba(255,255,255,0.6)", backdropFilter: "blur(8px)" }}>
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3 flex items-center gap-3">
+        <div className="flex items-center gap-2 cursor-pointer" onClick={() => setView("home")}>
+          <div className="w-9 h-9 rounded-lg flex items-center justify-center text-white font-bold" style={{ background: "var(--bcg-green)" }}>W</div>
+          <div>
+            <div className="font-semibold text-sm">SMMC W13 主題測驗</div>
+            <div className="text-xs" style={{ color: "var(--bcg-mute)" }}>MNCs &amp; Globalization · 40 questions</div>
+          </div>
+        </div>
+        <div className="flex-1"></div>
+        <button onClick={() => setView("home")} className="text-sm px-3 py-1 rounded hover:bg-black/5">{t("首頁", "Home")}</button>
+        <button onClick={() => setView("dashboard")} className="text-sm px-3 py-1 rounded hover:bg-black/5">{t("儀表板", "Dashboard")}</button>
+        <button onClick={() => setView("profile")} className="text-sm px-3 py-1 rounded hover:bg-black/5">{t("個人資料", "Profile")}</button>
+        <select
+          className="text-xs bg-transparent border rounded px-2 py-1"
+          style={{ borderColor: "var(--bcg-line)" }}
+          value={state.lang}
+          onChange={e => setState(s => ({ ...s, lang: e.target.value }))}
+        >
+          <option value="zh">中文</option>
+          <option value="en">EN</option>
+          <option value="both">雙語</option>
+        </select>
+        <button
+          className="text-xs px-2 py-1 rounded"
+          onClick={() => setState(s => ({ ...s, theme: s.theme === "dark" ? "light" : "dark" }))}
+        >{state.theme === "dark" ? "☀" : "☾"}</button>
+      </div>
+    </header>
+  );
+}
+
+// ============================================================
+// Home — 主題選擇
+// ============================================================
+function Home({ state, t, onStart, setView }) {
+  const stats = useMemo(() => computeTopicStats(state, TOPICS), [state]);
+  return (
+    <div className="pt-6">
+      <div className="mb-6">
+        <div className="text-xs mb-1" style={{ color: "var(--bcg-mute)" }}>SMMC-EMI · Week 13</div>
+        <h1 className="text-2xl sm:text-3xl font-semibold" style={{ color: "var(--bcg-green)" }}>{t("MNCs 與全球化 — 主題測驗", "MNCs & Globalization — Topical Quiz")}</h1>
+        <p className="text-sm mt-2" style={{ color: "var(--bcg-mute)" }}>
+          {t(
+            "共 7 個主題 / 40 題。每主題作答完即可送出，可重作或進入下一主題。所有作答歷程會記錄在『儀表板』。",
+            "7 topics / 40 questions. Submit per topic, retry or move on. All history is tracked in the Dashboard."
+          )}
+        </p>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {TOPICS.map((tp, i) => {
+          const s = stats[tp.id];
+          return (
+            <div key={tp.id} className="topic-tile" onClick={() => onStart(tp)}>
+              <div className="flex items-start justify-between mb-2">
+                <div className="text-xs font-medium px-2 py-0.5 rounded" style={{ background: tp.color, color: "#fff" }}>
+                  Topic {i + 1}
+                </div>
+                <div className="text-xs" style={{ color: "var(--bcg-mute)" }}>
+                  {tp.questions.length} {t("題", "Q")}
+                </div>
+              </div>
+              <div className="font-semibold mb-1">{t(tp.titleZh, tp.titleEn)}</div>
+              <div className="text-xs mb-3" style={{ color: "var(--bcg-mute)" }}>{tp.desc}</div>
+              <div className="flex items-center gap-3 text-xs" style={{ color: "var(--bcg-mute)" }}>
+                <div>{t("已作答", "Attempted")}: <span className="font-semibold" style={{ color: "var(--bcg-ink)" }}>{s.attempted}/{tp.questions.length}</span></div>
+                <div>{t("正確率", "Accuracy")}: <span className="font-semibold" style={{ color: "var(--bcg-ink)" }}>{s.attempted > 0 ? Math.round(s.lastAccuracy * 100) : "—"}%</span></div>
+              </div>
+              <div className="mt-3 progress-bar"><div className="progress-fill" style={{ width: `${s.attempted / tp.questions.length * 100}%` }}></div></div>
+              <div className="mt-4 flex justify-end">
+                <span className="bcg-btn text-sm">{s.attempted > 0 ? t("重新測驗", "Retake") : t("開始作答", "Start")} →</span>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="mt-8 bcg-card p-5">
+        <div className="font-semibold mb-2">{t("總覽", "Overview")}</div>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <div><div className="stat-num">{TOTAL_Q}</div><div className="text-xs" style={{ color: "var(--bcg-mute)" }}>{t("總題數", "Total Questions")}</div></div>
+          <div><div className="stat-num">{TOPICS.length}</div><div className="text-xs" style={{ color: "var(--bcg-mute)" }}>{t("主題數", "Topics")}</div></div>
+          <div><div className="stat-num">{state.sessions.length}</div><div className="text-xs" style={{ color: "var(--bcg-mute)" }}>{t("測驗次數", "Sessions")}</div></div>
+          <div><div className="stat-num">{Object.keys(state.attempts).length}</div><div className="text-xs" style={{ color: "var(--bcg-mute)" }}>{t("已作答題目", "Distinct Qs Attempted")}</div></div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function computeTopicStats(state, topics) {
+  const r = {};
+  topics.forEach(tp => {
+    let attempted = 0;
+    let lastCorrect = 0;
+    tp.questions.forEach((_, qi) => {
+      const arr = state.attempts[`${tp.id}:${qi}`];
+      if (arr && arr.length > 0) {
+        attempted++;
+        if (arr[arr.length - 1].correct) lastCorrect++;
+      }
+    });
+    r[tp.id] = {
+      attempted,
+      lastAccuracy: attempted > 0 ? lastCorrect / attempted : 0,
+    };
+  });
+  return r;
+}
+
+// ============================================================
+// Profile
+// ============================================================
+function Profile({ state, setState, setView, t }) {
+  const [p, setP] = useState(state.profile);
+  return (
+    <div className="pt-6 max-w-xl">
+      <h2 className="text-xl font-semibold mb-1" style={{ color: "var(--bcg-green)" }}>{t("個人資料", "Profile")}</h2>
+      <p className="text-sm mb-5" style={{ color: "var(--bcg-mute)" }}>
+        {t("資料只儲存在本機瀏覽器，不會上傳。", "Data is stored locally in your browser only.")}
+      </p>
+      <div className="bcg-card p-5 space-y-4">
+        <div>
+          <label className="text-xs mb-1 block" style={{ color: "var(--bcg-mute)" }}>{t("姓名", "Name")}</label>
+          <input type="text" value={p.name} onChange={e => setP({ ...p, name: e.target.value })} />
+        </div>
+        <div>
+          <label className="text-xs mb-1 block" style={{ color: "var(--bcg-mute)" }}>{t("學號 / 編號", "Student ID")}</label>
+          <input type="text" value={p.studentId} onChange={e => setP({ ...p, studentId: e.target.value })} />
+        </div>
+        <div>
+          <label className="text-xs mb-1 block" style={{ color: "var(--bcg-mute)" }}>Email</label>
+          <input type="email" value={p.email} onChange={e => setP({ ...p, email: e.target.value })} />
+        </div>
+        <div className="flex gap-2 pt-2">
+          <button className="bcg-btn" onClick={() => { setState(s => ({ ...s, profile: p })); setView("home"); }}>
+            {t("儲存", "Save")}
+          </button>
+          <button className="bcg-btn-ghost" onClick={() => setView("home")}>{t("取消", "Cancel")}</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================
+// Quiz
+// ============================================================
+function Quiz({ topic, session, setSession, recordAnswer, submitQuiz, t, lang, cancel }) {
+  const q = topic.questions[session.curIdx];
+  const cur = session.answers[session.curIdx];
+  const [reveal, setReveal] = useState(false);
+
+  useEffect(() => {
+    setReveal(false);
+    setSession(s => ({ ...s, qStartTs: Date.now() }));
+  }, [session.curIdx]);
+
+  function choose(i) {
+    if (reveal) return;
+    const timeSec = Math.round((Date.now() - session.qStartTs) / 1000);
+    const newAnswers = [...session.answers];
+    newAnswers[session.curIdx] = { chosen: i, timeSec };
+    setSession(s => ({ ...s, answers: newAnswers }));
+    recordAnswer(session.curIdx, i, timeSec);
+    setReveal(true);
+  }
+
+  function go(delta) {
+    const newIdx = session.curIdx + delta;
+    if (newIdx < 0 || newIdx >= topic.questions.length) return;
+    setSession(s => ({ ...s, curIdx: newIdx }));
+  }
+
+  const allAnswered = session.answers.every(a => a !== null);
+  const progress = (session.curIdx + 1) / topic.questions.length;
+
+  return (
+    <div className="pt-6">
+      <div className="flex items-center justify-between mb-2">
+        <div>
+          <div className="text-xs" style={{ color: "var(--bcg-mute)" }}>{t(topic.titleZh, topic.titleEn)}</div>
+          <div className="text-lg font-semibold">
+            {t("第", "Question")} {session.curIdx + 1} / {topic.questions.length}
+          </div>
+        </div>
+        <button className="text-xs underline" onClick={cancel} style={{ color: "var(--bcg-mute)" }}>
+          {t("退出本主題", "Exit topic")}
+        </button>
+      </div>
+      <div className="progress-bar mb-6"><div className="progress-fill" style={{ width: `${progress * 100}%` }}></div></div>
+
+      <div className="bcg-card p-6 mb-4">
+        <div className="text-base font-medium mb-1">
+          {lang === "both" ? (
+            <>
+              <div>{q.q.zh}</div>
+              <div className="text-sm mt-1" style={{ color: "var(--bcg-mute)" }}>{q.q.en}</div>
+            </>
+          ) : lang === "en" ? q.q.en : q.q.zh}
+        </div>
+
+        <div className="space-y-2 mt-5">
+          {q.opts.map((opt, i) => {
+            const isChosen = cur && cur.chosen === i;
+            const isCorrect = i === q.answer;
+            let cls = "opt";
+            if (reveal) {
+              if (isCorrect) cls += " correct";
+              else if (isChosen) cls += " wrong";
+            } else if (isChosen) cls += " selected";
+            return (
+              <div key={i} className={cls} onClick={() => choose(i)}>
+                <div className="flex items-start gap-2">
+                  <div className="font-semibold" style={{ minWidth: 22 }}>{String.fromCharCode(65 + i)}.</div>
+                  <div className="flex-1">
+                    {lang === "both" ? (
+                      <>
+                        <div>{opt.zh}</div>
+                        <div className="text-xs mt-0.5" style={{ color: "var(--bcg-mute)" }}>{opt.en}</div>
+                      </>
+                    ) : lang === "en" ? opt.en : opt.zh}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {reveal && (
+          <div className="mt-5 p-4 rounded-lg" style={{ background: cur.chosen === q.answer ? "rgba(47,125,79,0.08)" : "rgba(179,38,30,0.06)", border: "1px solid var(--bcg-line)" }}>
+            <div className="text-sm font-semibold mb-1" style={{ color: cur.chosen === q.answer ? "var(--ok)" : "var(--bad)" }}>
+              {cur.chosen === q.answer ? t("答對了！", "Correct!") : t("答錯了", "Incorrect")}
+            </div>
+            <div className="text-sm">
+              {lang === "both" ? (
+                <>
+                  <div>{q.explain.zh}</div>
+                  <div className="text-xs mt-1" style={{ color: "var(--bcg-mute)" }}>{q.explain.en}</div>
+                </>
+              ) : lang === "en" ? q.explain.en : q.explain.zh}
+            </div>
+            <div className="text-xs mt-2" style={{ color: "var(--bcg-mute)" }}>⏱ {cur.timeSec}s</div>
+          </div>
+        )}
+      </div>
+
+      <div className="flex justify-between items-center">
+        <button className="bcg-btn-ghost" onClick={() => go(-1)} disabled={session.curIdx === 0}>← {t("上一題", "Prev")}</button>
+        <div className="text-xs" style={{ color: "var(--bcg-mute)" }}>
+          {t("已作答", "Answered")}: {session.answers.filter(a => a !== null).length} / {topic.questions.length}
+        </div>
+        {session.curIdx < topic.questions.length - 1 ? (
+          <button className="bcg-btn" onClick={() => go(1)}>{t("下一題", "Next")} →</button>
+        ) : (
+          <button className="bcg-btn" onClick={submitQuiz} disabled={!allAnswered}>
+            {t("送出", "Submit")} ✓
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ============================================================
+// Result
+// ============================================================
+function Result({ topic, summary, session, onRetry, onNext, onHome, onDashboard, t, lang }) {
+  const pct = Math.round(summary.correctCount / summary.total * 100);
+  return (
+    <div className="pt-6">
+      <div className="bcg-card p-6 mb-4 text-center">
+        <div className="text-xs mb-1" style={{ color: "var(--bcg-mute)" }}>{t(topic.titleZh, topic.titleEn)}</div>
+        <div className="text-sm" style={{ color: "var(--bcg-mute)" }}>{t("本次成績", "Your Score")}</div>
+        <div className="my-3" style={{ fontSize: 48, fontWeight: 600, color: "var(--bcg-green)" }}>
+          {summary.correctCount}<span style={{ fontSize: 24, color: "var(--bcg-mute)" }}> / {summary.total}</span>
+        </div>
+        <div className="text-lg font-semibold mb-2">{pct}%</div>
+        <div className="text-xs" style={{ color: "var(--bcg-mute)" }}>
+          ⏱ {summary.totalTimeSec}s · {t("平均每題", "Avg/Q")}: {Math.round(summary.totalTimeSec / summary.total)}s
+        </div>
+      </div>
+
+      <div className="bcg-card p-5 mb-4">
+        <div className="font-semibold mb-3">{t("逐題回顧", "Per-Question Review")}</div>
+        <div className="space-y-2">
+          {topic.questions.map((q, i) => {
+            const a = summary.answersSnap[i];
+            const isCorrect = a && a.chosen === q.answer;
+            return (
+              <div key={i} className="text-sm flex items-start gap-2 py-1 border-b" style={{ borderColor: "var(--bcg-line)" }}>
+                <div className="font-semibold" style={{ color: isCorrect ? "var(--ok)" : "var(--bad)", minWidth: 26 }}>{isCorrect ? "✓" : "✗"} {i + 1}</div>
+                <div className="flex-1 text-xs">
+                  <div>{lang === "en" ? q.q.en : q.q.zh}</div>
+                  {!isCorrect && (
+                    <div className="text-xs mt-0.5" style={{ color: "var(--bcg-mute)" }}>
+                      {t("正解", "Answer")}: {String.fromCharCode(65 + q.answer)}. {lang === "en" ? q.opts[q.answer].en : q.opts[q.answer].zh}
+                    </div>
+                  )}
+                </div>
+                <div className="text-xs" style={{ color: "var(--bcg-mute)" }}>⏱ {a?.timeSec ?? 0}s</div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      <div className="flex flex-wrap gap-2 justify-center">
+        <button className="bcg-btn-ghost" onClick={onRetry}>↻ {t("重作本主題", "Retry topic")}</button>
+        <button className="bcg-btn" onClick={onNext}>→ {t("下一主題", "Next topic")}</button>
+        <button className="bcg-btn-ghost" onClick={onDashboard}>📊 {t("查看儀表板", "View Dashboard")}</button>
+        <button className="bcg-btn-ghost" onClick={onHome}>🏠 {t("返回首頁", "Home")}</button>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================
+// Dashboard
+// ============================================================
+function Dashboard({ state, setState, t, setView }) {
+  const overall = useMemo(() => {
+    let totalAttempts = 0, totalCorrect = 0, totalTime = 0;
+    Object.values(state.attempts).forEach(arr => {
+      arr.forEach(a => {
+        totalAttempts++;
+        if (a.correct) totalCorrect++;
+        totalTime += a.timeSec || 0;
+      });
+    });
+    return {
+      totalAttempts, totalCorrect, totalTime,
+      accuracy: totalAttempts ? totalCorrect / totalAttempts : 0,
+      avgTime: totalAttempts ? totalTime / totalAttempts : 0,
+    };
+  }, [state.attempts]);
+
+  // 每題的詳細：attempts 數、accuracy、平均時間、上次答題狀態
+  const perQuestion = useMemo(() => {
+    const rows = [];
+    TOPICS.forEach(topic => {
+      topic.questions.forEach((q, qi) => {
+        const arr = state.attempts[`${topic.id}:${qi}`] || [];
+        const correct = arr.filter(a => a.correct).length;
+        const avgT = arr.length ? arr.reduce((s, a) => s + a.timeSec, 0) / arr.length : 0;
+        rows.push({
+          topicId: topic.id,
+          topicLabel: topic.titleZh,
+          qIdx: qi,
+          qLabel: q.q.zh.slice(0, 40) + (q.q.zh.length > 40 ? "…" : ""),
+          attempts: arr.length,
+          accuracy: arr.length ? correct / arr.length : 0,
+          avgTime: avgT,
+          lastCorrect: arr.length ? arr[arr.length - 1].correct : null,
+        });
+      });
+    });
+    return rows;
+  }, [state.attempts]);
+
+  // 各主題正確率演進（依 session）
+  const topicEvolution = useMemo(() => {
+    const map = {};
+    TOPICS.forEach(t => { map[t.id] = []; });
+    state.sessions.forEach(s => {
+      if (map[s.topicId]) {
+        map[s.topicId].push({
+          ts: s.ts,
+          accuracy: s.correctCount / s.total,
+          time: s.totalTimeSec,
+        });
+      }
+    });
+    return map;
+  }, [state.sessions]);
+
+  function exportCSV() {
+    const rows = [];
+    rows.push(["section", "field1", "field2", "field3", "field4", "field5", "field6"]);
+    rows.push(["profile", "name", state.profile.name || "", "studentId", state.profile.studentId || "", "email", state.profile.email || ""]);
+    rows.push([]);
+    rows.push(["per_question", "topic", "qIdx", "attempts", "accuracy", "avgTimeSec", "lastCorrect"]);
+    perQuestion.forEach(r => {
+      rows.push(["per_question", r.topicLabel, r.qIdx + 1, r.attempts, r.accuracy.toFixed(3), r.avgTime.toFixed(1), r.lastCorrect === null ? "" : r.lastCorrect]);
+    });
+    rows.push([]);
+    rows.push(["session", "topic", "ts", "correctCount", "total", "accuracy", "totalTimeSec"]);
+    state.sessions.forEach(s => {
+      const tp = TOPICS.find(t => t.id === s.topicId);
+      rows.push(["session", tp?.titleZh || s.topicId, new Date(s.ts).toISOString(), s.correctCount, s.total, (s.correctCount / s.total).toFixed(3), s.totalTimeSec]);
+    });
+    rows.push([]);
+    rows.push(["raw_attempt", "topic", "qIdx", "correct", "timeSec", "ts", "chosen"]);
+    Object.entries(state.attempts).forEach(([k, arr]) => {
+      const [tid, qi] = k.split(":");
+      const tp = TOPICS.find(t => t.id === tid);
+      arr.forEach(a => {
+        rows.push(["raw_attempt", tp?.titleZh || tid, Number(qi) + 1, a.correct, a.timeSec, new Date(a.ts).toISOString(), a.chosen]);
+      });
+    });
+    const csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(",")).join("\n");
+    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    const stamp = new Date().toISOString().slice(0, 16).replace(/[:T]/g, "-");
+    a.href = url; a.download = `SMMC_W13_Quiz_${state.profile.studentId || "anon"}_${stamp}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  function resetAll() {
+    if (confirm(t("確定要清除所有作答紀錄？此動作無法復原。", "Clear all attempt records? This cannot be undone."))) {
+      setState(s => ({ ...s, attempts: {}, sessions: [] }));
+    }
+  }
+
+  return (
+    <div className="pt-6">
+      <div className="flex flex-wrap items-center gap-2 mb-5">
+        <h2 className="text-xl font-semibold flex-1" style={{ color: "var(--bcg-green)" }}>{t("學習儀表板", "Learning Dashboard")}</h2>
+        <button className="bcg-btn" onClick={exportCSV}>⤓ {t("匯出 CSV", "Export CSV")}</button>
+        <button className="bcg-btn-ghost" onClick={resetAll}>{t("清除紀錄", "Reset")}</button>
+      </div>
+
+      {state.profile.name && (
+        <div className="bcg-card p-4 mb-4 text-sm">
+          <span style={{ color: "var(--bcg-mute)" }}>{t("作答者", "Learner")}：</span>
+          <span className="font-medium">{state.profile.name}</span>
+          {state.profile.studentId && <span className="ml-3" style={{ color: "var(--bcg-mute)" }}>ID: {state.profile.studentId}</span>}
+          {state.profile.email && <span className="ml-3" style={{ color: "var(--bcg-mute)" }}>{state.profile.email}</span>}
+        </div>
+      )}
+
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+        <StatBox label={t("總作答次數", "Total Attempts")} value={overall.totalAttempts} />
+        <StatBox label={t("整體正確率", "Overall Accuracy")} value={`${Math.round(overall.accuracy * 100)}%`} />
+        <StatBox label={t("總花費時間", "Total Time")} value={fmtTime(overall.totalTime)} />
+        <StatBox label={t("平均每題時間", "Avg Time/Q")} value={`${overall.avgTime.toFixed(1)}s`} />
+      </div>
+
+      <div className="bcg-card p-5 mb-6">
+        <div className="font-semibold mb-3">{t("各主題正確率演進", "Accuracy Evolution per Topic")}</div>
+        <div className="space-y-3">
+          {TOPICS.map(tp => {
+            const ev = topicEvolution[tp.id];
+            if (ev.length === 0) {
+              return (
+                <div key={tp.id} className="text-xs flex items-center gap-3">
+                  <div style={{ minWidth: 160 }}>{tp.titleZh}</div>
+                  <div style={{ color: "var(--bcg-mute)" }}>{t("尚未測驗", "Not yet attempted")}</div>
+                </div>
+              );
+            }
+            return <SparkRow key={tp.id} label={tp.titleZh} points={ev} t={t} />;
+          })}
+        </div>
+      </div>
+
+      <div className="bcg-card p-5 mb-6">
+        <div className="font-semibold mb-3">{t("各題練習紀錄", "Per-Question Practice Record")}</div>
+        <div className="overflow-x-auto">
+          <table className="kb">
+            <thead>
+              <tr>
+                <th>{t("主題", "Topic")}</th>
+                <th>#</th>
+                <th>{t("題目（摘）", "Question (snippet)")}</th>
+                <th>{t("作答次數", "Attempts")}</th>
+                <th>{t("正確率", "Accuracy")}</th>
+                <th>{t("平均時間", "Avg Time")}</th>
+                <th>{t("上次", "Last")}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {perQuestion.map((r, i) => (
+                <tr key={i}>
+                  <td className="text-xs">{r.topicLabel}</td>
+                  <td>{r.qIdx + 1}</td>
+                  <td className="text-xs">{r.qLabel}</td>
+                  <td>{r.attempts}</td>
+                  <td>{r.attempts > 0 ? `${Math.round(r.accuracy * 100)}%` : "—"}</td>
+                  <td>{r.attempts > 0 ? `${r.avgTime.toFixed(1)}s` : "—"}</td>
+                  <td>
+                    {r.lastCorrect === null ? "—" : r.lastCorrect ? <span style={{ color: "var(--ok)" }}>✓</span> : <span style={{ color: "var(--bad)" }}>✗</span>}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div className="bcg-card p-5">
+        <div className="font-semibold mb-3">{t("測驗會話紀錄", "Session History")}</div>
+        {state.sessions.length === 0 ? (
+          <div className="text-sm" style={{ color: "var(--bcg-mute)" }}>{t("尚無測驗紀錄。", "No sessions yet.")}</div>
+        ) : (
+          <table className="kb">
+            <thead>
+              <tr>
+                <th>{t("時間", "Time")}</th>
+                <th>{t("主題", "Topic")}</th>
+                <th>{t("成績", "Score")}</th>
+                <th>{t("正確率", "Accuracy")}</th>
+                <th>{t("耗時", "Duration")}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {[...state.sessions].reverse().map((s, i) => {
+                const tp = TOPICS.find(t => t.id === s.topicId);
+                return (
+                  <tr key={i}>
+                    <td className="text-xs">{new Date(s.ts).toLocaleString()}</td>
+                    <td className="text-xs">{tp?.titleZh}</td>
+                    <td>{s.correctCount}/{s.total}</td>
+                    <td>{Math.round(s.correctCount / s.total * 100)}%</td>
+                    <td>{fmtTime(s.totalTimeSec)}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function StatBox({ label, value }) {
+  return (
+    <div className="bcg-card p-4 text-center">
+      <div className="stat-num">{value}</div>
+      <div className="text-xs mt-1" style={{ color: "var(--bcg-mute)" }}>{label}</div>
+    </div>
+  );
+}
+
+function SparkRow({ label, points, t }) {
+  // points: [{ts, accuracy, time}]
+  const W = 280, H = 36, PAD = 4;
+  const max = 1, min = 0;
+  const xs = points.map((_, i) => PAD + i * ((W - 2 * PAD) / Math.max(points.length - 1, 1)));
+  const ys = points.map(p => PAD + (1 - (p.accuracy - min) / (max - min)) * (H - 2 * PAD));
+  const path = points.map((_, i) => `${i === 0 ? "M" : "L"} ${xs[i].toFixed(1)} ${ys[i].toFixed(1)}`).join(" ");
+  const last = points[points.length - 1];
+  return (
+    <div className="flex items-center gap-3 text-xs">
+      <div style={{ minWidth: 160 }}>{label}</div>
+      <svg width={W} height={H} style={{ flexShrink: 0 }}>
+        <line x1={PAD} y1={H / 2} x2={W - PAD} y2={H / 2} stroke="var(--bcg-line)" strokeWidth="0.5" strokeDasharray="2 2" />
+        <path d={path} fill="none" stroke="var(--bcg-green)" strokeWidth="1.5" />
+        {points.map((p, i) => (
+          <circle key={i} cx={xs[i]} cy={ys[i]} r="3" fill={p.accuracy >= 0.6 ? "var(--bcg-green)" : "#b3261e"} />
+        ))}
+      </svg>
+      <div style={{ color: "var(--bcg-mute)" }}>
+        n={points.length} · {t("最新", "latest")} {Math.round(last.accuracy * 100)}%
+      </div>
+    </div>
+  );
+}
+
+function fmtTime(s) {
+  if (s < 60) return `${Math.round(s)}s`;
+  const m = Math.floor(s / 60), ss = Math.round(s % 60);
+  return `${m}m ${ss}s`;
+}
+
+// ============================================================
+// Footer
+// ============================================================
+function Footer({ t }) {
+  return (
+    <footer className="border-t mt-10 py-4 text-xs text-center" style={{ borderColor: "var(--bcg-line)", color: "var(--bcg-mute)" }}>
+      SMMC-EMI · Week 13 · NCNU IBS · {t("資料儲存於本機 localStorage", "Data stored locally in your browser")}
+    </footer>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
+</body>
+</html>
