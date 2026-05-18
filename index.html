@@ -688,6 +688,40 @@ function Bi({ zh, en, primary='zh', sizeZh='text-base', sizeEn='text-sm', muteEn
 }
 
 // ============================================================
+// Error Boundary — 防白屏
+// ============================================================
+class ErrorBoundary extends React.Component {
+  constructor(props) { super(props); this.state = { error: null }; }
+  static getDerivedStateFromError(error) { return { error }; }
+  componentDidCatch(error, info) { console.error('ErrorBoundary:', error, info); }
+  reset = () => this.setState({ error: null });
+  render() {
+    if (this.state.error) {
+      return (
+        <div style={{padding:'40px 20px',maxWidth:'600px',margin:'40px auto',fontFamily:'Inter,sans-serif'}}>
+          <div className="bcg-card" style={{padding:'24px'}}>
+            <h2 className="serif font-bold text-xl" style={{color:'var(--bad)',marginBottom:'12px'}}>
+              ⚠ 發生錯誤 / An error occurred
+            </h2>
+            <p className="text-sm" style={{marginBottom:'12px'}}>頁面渲染時遇到問題。你的作答紀錄仍儲存在本機，不會遺失。</p>
+            <p className="text-xs italic opacity-70" style={{marginBottom:'16px'}}>
+              The page hit an error. Your records are still saved locally.
+            </p>
+            <details style={{marginBottom:'16px',fontSize:'12px',background:'rgba(0,0,0,.04)',padding:'8px 12px',borderRadius:'6px'}}>
+              <summary style={{cursor:'pointer'}}>技術訊息 / Technical details</summary>
+              <pre style={{whiteSpace:'pre-wrap',marginTop:'8px',fontSize:'11px'}}>{String(this.state.error?.stack || this.state.error)}</pre>
+            </details>
+            <button className="bcg-btn" onClick={this.reset}>重試 / Try again</button>
+            <button className="bcg-btn-ghost" style={{marginLeft:'8px'}} onClick={() => location.reload()}>重新載入 / Reload</button>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+// ============================================================
 // App
 // ============================================================
 function App() {
@@ -976,14 +1010,15 @@ function Field({ labelZh, labelEn, value, onChange, type='text' }) {
 function Quiz({ topic, session, setSession, recordAnswer, submitQuiz, cancel }) {
   const q = topic.questions[session.curIdx];
   const cur = session.answers[session.curIdx];
-  const [reveal, setReveal] = useState(false);
   const correctIdx = _d(q.ans);
+  // reveal 由「該題是否已作答」直接推導，不用 useState（避免 race condition）
+  const reveal = cur != null;
 
   useEffect(() => {
-    setReveal(false);
-    setSession(s => ({ ...s, qStartTs: Date.now() }));
-    // 如果該題已經答過，重新揭示
-    if (session.answers[session.curIdx] != null) setReveal(true);
+    // 切換題目時，若該題尚未作答才重設計時起點
+    if (session.answers[session.curIdx] == null) {
+      setSession(s => ({ ...s, qStartTs: Date.now() }));
+    }
   }, [session.curIdx]);
 
   function choose(i) {
@@ -993,7 +1028,6 @@ function Quiz({ topic, session, setSession, recordAnswer, submitQuiz, cancel }) 
     newAnswers[session.curIdx] = { chosen: i, timeSec };
     setSession(s => ({ ...s, answers: newAnswers }));
     recordAnswer(session.curIdx, i, timeSec);
-    setReveal(true);
   }
 
   function go(delta) {
@@ -1437,7 +1471,9 @@ function Footer() {
   );
 }
 
-ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+ReactDOM.createRoot(document.getElementById("root")).render(
+  <ErrorBoundary><App /></ErrorBoundary>
+);
 </script>
 </body>
 </html>
